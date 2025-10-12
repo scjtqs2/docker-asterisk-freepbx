@@ -1,0 +1,25 @@
+[DEFAULT]
+# 忽略本地 IP
+ignoreip    = 127.0.0.1/8 ::1
+              10.0.0.0/8
+              172.16.0.0/12
+              192.168.0.0/16
+# 最大失败次数
+maxretry = 5
+# 查找时间窗口（秒）
+findtime = 300
+# 禁止时间（秒）
+bantime = 1w
+allowipv6 = auto
+
+[sshd]
+enabled = false
+
+[asterisk]
+enabled = true
+# 后端（auto 自动检测）
+backend = auto
+filter = asterisk
+logpath = /var/log/asterisk/full
+# 禁止动作
+action = iptables-allports[protocol=all]
