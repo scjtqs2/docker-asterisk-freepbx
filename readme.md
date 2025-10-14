@@ -3,10 +3,10 @@
 > 
 > 纯 docker运行，支持arm64(rk3588上在跑)和x86
 
-集成了如下类容：
+集成了如下内容：
 
 + asterisk 20
-+ asterisk-chan-quectel 模块
++ [asterisk-chan-quectel](https://github.com/IchthysMaranatha/asterisk-chan-quectel) 模块
 + freepbx 17
 + php8.2
 + acme.sh 自动生成证书脚本
