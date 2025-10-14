@@ -191,5 +191,101 @@ else
     # 如果没有SMTP，通常会使用默认的本地配置，您可能需要在此处处理它。
 fi
 
+# ====================================================================
+#  1. 动态检测CPU架构并设置ODBC驱动路径
+# ====================================================================
+echo "正在检测系统架构以配置ODBC驱动..."
+
+# 使用 uname -m 在运行时检测，比构建时的 ARG 更可靠
+ARCH=$(uname -m)
+DRIVER_PATH=""
+
+case "$ARCH" in
+    "x86_64")
+        echo "检测到 x86_64 (amd64) 架构。"
+        DRIVER_PATH="/usr/lib/x86_64-linux-gnu/odbc/libmaodbc.so"
+        ;;
+    "aarch64")
+        echo "检测到 aarch64 (arm64) 架构。"
+        DRIVER_PATH="/usr/lib/aarch64-linux-gnu/odbc/libmaodbc.so"
+        ;;
+    *)
+        echo "错误：不支持的架构 '$ARCH'！无法配置ODBC驱动。"
+        exit 1
+        ;;
+esac
+
+# 检查驱动文件是否存在，增加脚本的健壮性
+if [ ! -f "$DRIVER_PATH" ]; then
+    echo "致命错误：ODBC驱动文件在路径 '$DRIVER_PATH' 未找到！"
+    echo "请确认 'odbc-mariadb' 包已在 Dockerfile 中正确安装。"
+    exit 1
+fi
+
+echo "ODBC 驱动路径已确定为: $DRIVER_PATH"
+
+
+# ====================================================================
+#  2. 动态生成 /etc/odbcinst.ini
+# ====================================================================
+echo "正在生成 /etc/odbcinst.ini 配置文件..."
+cat <<EOF > /etc/odbcinst.ini
+[MySQL]
+Description = ODBC for MySQL (MariaDB)
+Driver      = ${DRIVER_PATH}
+FileUsage   = 1
+EOF
+
+
+# ====================================================================
+#  3. 动态生成 /etc/odbc.ini
+# ====================================================================
+echo "正在生成 /etc/odbc.ini 配置文件..."
+# 使用环境变量，并提供合理的默认值以防变量未设置
+cat <<EOF > /etc/odbc.ini
+[MySQL-asteriskcdrdb]
+Description = MySQL connection to '${CDRDBNAME:-asteriskcdrdb}' database
+Driver      = MySQL
+Server      = ${DBHOST:-mariadb}
+User        = ${DBUSER:-freepbxuser}
+Password    = ${DBPASS:-freepbxpass}
+Database    = ${CDRDBNAME:-asteriskcdrdb}
+Port        = ${DBPORT:-3306}
+EOF
+
+# ====================================================================
+#  3. 【新增】动态配置 Apache 端口
+# ====================================================================
+echo "--- [Entrypoint] 正在配置 Apache 端口 ---"
+
+# 如果环境变量未设置，则使用标准的默认端口
+HTTP_PORT=${APACHE_HTTP_PORT:-80}
+HTTPS_PORT=${APACHE_HTTPS_PORT:-443}
+
+echo "设置 Apache HTTP 监听端口为: ${HTTP_PORT}"
+echo "设置 Apache HTTPS 监听端口为: ${HTTPS_PORT}"
+
+# 定义 Apache 配置文件路径
+PORTS_CONF="/etc/apache2/ports.conf"
+VHOST_CONF="/etc/apache2/sites-enabled/000-default.conf"
+# 注意：您的 Dockerfile 中没有 SSL 的 VirtualHost，但我们预留逻辑
+SSL_VHOST_CONF="/etc/apache2/sites-available/default-ssl.conf"
+
+# 修改主端口配置文件 ports.conf
+# 使用 sed 将 "Listen 80" 替换为新的 HTTP 端口
+sed -i "s/Listen 80/Listen ${HTTP_PORT}/" "${PORTS_CONF}"
+# 使用 sed 将 "Listen 443" 替换为新的 HTTPS 端口
+sed -i "s/Listen 443/Listen ${HTTPS_PORT}/" "${PORTS_CONF}"
+
+# 修改 HTTP 虚拟主机配置文件 000-default.conf
+# 使用 sed 将 "<VirtualHost *:80>" 替换为新的 HTTP 端口
+sed -i "s/<VirtualHost \*:[0-9]*>/<VirtualHost *:${HTTP_PORT}>/" "${VHOST_CONF}"
+
+# (可选，增强健壮性) 检查并修改默认的 SSL 虚拟主机文件（如果存在）
+if [ -f "${SSL_VHOST_CONF}" ]; then
+    echo "检测到 SSL 虚拟主机配置文件，正在修改..."
+    sed -i "s/<VirtualHost _default_:[0-9]*>/<VirtualHost _default_:${HTTPS_PORT}>/" "${SSL_VHOST_CONF}"
+fi
+
 # 执行传入的命令
 exec "$@"

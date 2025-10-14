@@ -27,7 +27,7 @@ ENV TZ=Asia/Shanghai
 # 安装依赖
 RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
     asterisk asterisk-dev \
-    apache2 mariadb-client \
+    apache2 mariadb-client unixodbc odbc-mariadb \
     php8.2 php8.2-cli php8.2-common libapache2-mod-php8.2 \
     php8.2-mysql php8.2-curl php8.2-gd php8.2-mbstring php8.2-xml \
     php8.2-zip php8.2-bcmath php8.2-intl php8.2-fileinfo php8.2-sockets \
@@ -38,6 +38,7 @@ RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
     libsqlite3-dev libasound2-dev alsa-utils \
     fail2ban iptables iptables-persistent ipset iproute2 conntrack netfilter-persistent \
     nodejs npm vim cron libicu-dev pkgconf libbluetooth3 mailutils build-essential g++ \
+    libx264-dev libvpx-dev \
     && update-alternatives --set php /usr/bin/php8.2 \
     && a2enmod php8.2 \
     && rm -rf /var/lib/apt/lists/*
@@ -123,6 +124,7 @@ COPY fail2ban/check-fail2ban.sh /usr/src/check-fail2ban.sh
 #postfix
 COPY postfix/main.cf.template /etc/postfix/main.cf.template
 COPY acme_renew_and_import.sh /usr/local/bin/
+#COPY update-ip-db.sh /usr/local/bin/update-ip.sh
 # 为 Postfix chroot jail 创建 etc 目录
 RUN mkdir -p /var/spool/postfix/etc
 

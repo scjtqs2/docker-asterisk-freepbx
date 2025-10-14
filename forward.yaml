@@ -1,0 +1,64 @@
+# 如果有all这个配置，就是默认所有短信都会转发给这个机器人，建议发送给管理员，或者直接删除关闭
+all:
+  rule: all
+  type: all
+  notify: wechat
+  url: https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=xxxxxxx
+
+# 从上到下依次为 项目名称、规则（使用关键字匹配）、匹配方式（后续可能支持正则）、机器人url
+测试:
+  rule: 测试DDD
+  type: keyword
+  notify: wechat
+  url: https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=xxxxxxx
+
+工单号:
+  rule: "\\d{8}"   # 匹配8位数字
+  type: regex
+  notify: gotify
+  url: https://gotify.example.com
+  token: your_app_token
+
+bark:
+    notify: bark
+    type: all
+    rule: all
+    url: "https://api.day.app/xxxx"
+
+gtify:
+    notify: gotify
+    type: all
+    rule: all
+    url: "https://gotify.example.com"
+    token: "your_app_token"
+
+email:
+    notify: email
+    type: all
+    rule: all
+    smtp_host: "smtp.qq.com"
+    smtp_port: "587"
+    username: "xxx@qq.com"
+    password: "授权码"
+    from: "xxx@qq.com"
+    to: "yyy@qq.com"
+
+feishu:
+  notify: feishu
+  type: all
+  rule: all
+  url: "https://open.feishu.cn/open-apis/bot/v2/hook/xxx"
+
+dingding:
+  notify: dingtalk
+  type: all
+  rule: all
+  url: "https://oapi.dingtalk.com/robot/send?access_token=xxx"
+
+telegram:
+  notify: telegram
+  type: all
+  rule: all
+  bot_token: "123456789:AAFxxxxxxxx"
+  chat_id: "-1001234567890"
+  proxy: "http://proxy.example.com:8080" # 或者 "socks5://127.0.0.1:1080" 或者留空

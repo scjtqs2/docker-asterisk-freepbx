@@ -50,6 +50,7 @@ services:
       - CF_Account_ID=568
       - CF_Email=sip@mail.com
       - FQDN=sip.domain.com        # 需要生成证书的域名
+      - APACHE_HTTP_PORT=80
     volumes:
       - ./data:/data              # 短信db、转发日志等
       - ./asterisk/varasterisk:/var/lib/asterisk  # asterisk的lib文件夹

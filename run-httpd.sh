@@ -7,6 +7,25 @@ AMP_MGR_SECRET=${AMP_MGR_SECRET:-amp111}
 
 INSTALL_FLAG=${WEBROOT:-/var/www/html}/.installed
 
+  ENV_FILE="/etc/freepbx.env"
+  echo "Creating environment file for cron at ${ENV_FILE}"
+  # 清空旧文件
+  > ${ENV_FILE}
+  # 将需要的环境变量写入文件
+  echo "export DBENGINE='${DBENGINE}'" >> ${ENV_FILE}
+  echo "export DBUSER='${DBUSER}'" >> ${ENV_FILE}
+  echo "export DBPASS='${DBPASS}'" >> ${ENV_FILE}
+  echo "export DBHOST='${DBHOST}'" >> ${ENV_FILE}
+  echo "export DBPORT='${DBPORT}'" >> ${ENV_FILE}
+  echo "export DBNAME='${DBNAME}'" >> ${ENV_FILE}
+  echo "export CDRDBNAME='${CDRDBNAME}'" >> ${ENV_FILE}
+  echo "export USER='${USER}'" >> ${ENV_FILE}
+  echo "export GROUP='${GROUP}'" >> ${ENV_FILE}
+  echo "export FQDN='${FQDN}'" >> ${ENV_FILE}
+  echo "export TZ='${TZ}'" >> ${ENV_FILE}
+  # 设置文件权限，保护密码
+  chmod 600 ${ENV_FILE}
+
 # 初始化 FreePBX
 if [ ! -f "$INSTALL_FLAG" ]; then
   echo ">>> [FreePBX] First-time installation..."
@@ -202,7 +221,7 @@ if [ -n "$FQDN" ] && [ "$ACME_ENABLE" == "true" ]; then
             echo "请手动在 Web 界面中将证书（名称: $IMPORT_CERT_NAME）设置为默认。"
         fi
     fi
-    CRON_JOB="0 2 * * * /usr/local/bin/acme_renew_and_import.sh" # 每天凌晨2点执行
+    CRON_JOB="0 2 * * * . ${ENV_FILE}; /usr/local/bin/acme_renew_and_import.sh" # 每天凌晨2点执行
     echo "正在启动 Cron 服务并设置定时任务..."
     # 写入 Crontab 文件
     (crontab -l 2>/dev/null; echo "$CRON_JOB") | crontab -
@@ -212,12 +231,28 @@ if [ -n "$FQDN" ] && [ "$ACME_ENABLE" == "true" ]; then
     if command -v crond &> /dev/null; then
         crond &
     elif command -v cron &> /dev/null; then
-        service cron start
+        cron
     fi
 
     echo "Cron 定时任务已设置并启动。"
 else
     echo "跳过 SSL 证书配置和 Cron 设置。"
 fi
+
+## 动态IP定时更新到数据库。 不需要了，freepbx的`External Address`支持填域名。会自动解析动态公网ip。
+#if [ "$DYNAMIC_IP_ENABLE" == "true" ]; then
+#  echo "--- Setting up dynamic IP update cron job ---"
+#  # 每 5 分钟执行一次 IP 检查脚本，并将日志输出到指定文件
+#  IP_CRON_JOB="*/5 * * * * . ${ENV_FILE}; /usr/local/bin/update-ip.sh >> /var/log/asterisk/cron-ip-update.log 2>&1"
+#
+#  # 安全地将任务添加到 crontab，避免覆盖现有任务
+#  (crontab -l 2>/dev/null; echo "$IP_CRON_JOB") | crontab -
+#
+#  # 确保 cron 服务正在运行
+#  if ! pgrep -x "cron" > /dev/null; then
+#      cron
+#  fi
+#  echo "Dynamic IP update cron job has been set to run every 5 minutes."
+#fi
 
 exec /usr/sbin/apachectl -DFOREGROUND
