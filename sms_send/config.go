@@ -46,6 +46,10 @@ func GetAMIConfigFromDB(db *sql.DB) (*AMIConfig, error) {
 		} else if keyword == "AMPMGRPASS" {
 			amiConfig.Secret = value
 			foundPass = true
+		} else if keyword == "ASTMANAGERHOST" {
+			amiConfig.Host = value
+		} else if keyword == "ASTMANAGERPORT" {
+			amiConfig.Port = value
 		}
 	}
 
