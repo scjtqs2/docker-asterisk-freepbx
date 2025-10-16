@@ -1,3 +1,16 @@
+# 编译golang
+FROM golang:1.25-bookworm AS gobuild
+ENV GOPROXY='https://goproxy.cn,direct'
+
+WORKDIR /app
+# 复制 Go 源代码
+COPY sms_send/ .
+
+RUN go mod tidy
+
+# 编译成静态链接的二进制文件
+RUN CGO_ENABLED=1 GOOS=linux go build -ldflags="-w -s" -o /sms-gateway .
+
 FROM ubuntu:24.04
 ARG TARGETARCH
 
@@ -38,7 +51,7 @@ RUN apt-get update && DEBIAN_FRONTEND=noninteractive apt-get install -y \
     libsqlite3-dev libasound2-dev alsa-utils \
     fail2ban iptables iptables-persistent ipset iproute2 conntrack netfilter-persistent \
     nodejs npm vim cron libicu-dev pkgconf libbluetooth3 mailutils build-essential g++ \
-    libx264-dev libvpx-dev \
+    libx264-dev libvpx-dev ffmpeg \
     && update-alternatives --set php /usr/bin/php8.2 \
     && a2enmod php8.2 \
     && rm -rf /var/lib/apt/lists/*
@@ -114,7 +127,7 @@ COPY quectel.conf /etc/asterisk/quectel.conf
 COPY docker-entrypoint.sh /docker-entrypoint.sh
 COPY run-httpd.sh /run-httpd.sh
 COPY forward_sms.php /usr/local/bin/forward_sms.php
-COPY pjsip.transports_custom.conf /etc/asterisk/pjsip.transports_custom.conf
+#COPY pjsip.transports_custom.conf /etc/asterisk/pjsip.transports_custom.conf
 COPY 000-default.conf /etc/apache2/sites-enabled/000-default.conf
 COPY gai.conf /etc/gai.conf
 # 添加 fail2ban 配置文件
@@ -124,6 +137,8 @@ COPY fail2ban/check-fail2ban.sh /usr/src/check-fail2ban.sh
 #postfix
 COPY postfix/main.cf.template /etc/postfix/main.cf.template
 COPY acme_renew_and_import.sh /usr/local/bin/
+COPY --from=gobuild /sms-gateway /usr/local/bin/sms-gateway
+COPY send_sms_wrapper.sh /usr/local/bin/send_sms_wrapper.sh
 #COPY update-ip-db.sh /usr/local/bin/update-ip.sh
 # 为 Postfix chroot jail 创建 etc 目录
 RUN mkdir -p /var/spool/postfix/etc
@@ -132,6 +147,8 @@ RUN chmod +x /docker-entrypoint.sh && \
     chmod +x /run-httpd.sh && \
     chmod +x /usr/local/bin/forward_sms.php && \
     chmod +x /usr/local/bin/acme_renew_and_import.sh && \
+    chmod +x /usr/local/bin/send_sms_wrapper.sh && \
+    chmod +x /usr/local/bin/sms-gateway && \
     chown -R asterisk:asterisk /var/lib/asterisk /etc/asterisk /var/spool/asterisk /var/log/asterisk /usr/local/bin/forward_sms.php /etc/apache2/sites-enabled/000-default.conf
 
 

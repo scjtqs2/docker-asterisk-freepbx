@@ -42,28 +42,22 @@ fi
 
 if [ -n "$FORWARD_SECRET" ]; then
    echo "配置 FORWARD_SECRET:$FORWARD_SECRET"
-   sed -i "s|%FORWARD_SECRET%|$FORWARD_SECRET|g" /etc/asterisk/extensions_custom.conf
+   sed -i "/^FORWARD_SECRET=/c\FORWARD_SECRET=${FORWARD_SECRET}" /etc/asterisk/extensions_custom.conf
 else
     echo "警告: FORWARD_SECRET 环境变量未设置，使用默认配置"
 fi
 
-if [ -n "$FORWARD_URL" ]; then
-   echo "配置 FORWARD_URL:$FORWARD_URL"
-   sed -i "s|%FORWARD_URL%|$FORWARD_URL|g" /etc/asterisk/extensions_custom.conf
-else
-    echo "警告: FORWARD_URL 环境变量未设置，使用默认配置"
-fi
+SMS_PORT=${SMS_SEND_PORT:-1285}
+echo "短信/来电转发服务端口设置为: ${SMS_PORT}"
+NEW_FORWARD_URL="http://127.0.0.1:${SMS_PORT}/api/v1/sms/receive"
+NEW_CALL_FORWARD_URL="http://127.0.0.1:${SMS_PORT}/api/v1/call/receive"
+sed -i "/^FORWARD_URL=/c\FORWARD_URL=${NEW_FORWARD_URL}" /etc/asterisk/extensions_custom.conf
+sed -i "/^CALL_FORWARD_URL=/c\CALL_FORWARD_URL=${NEW_CALL_FORWARD_URL}" /etc/asterisk/extensions_custom.conf
 
-if [ -n "$CALL_FORWARD_URL" ]; then
-   echo "配置 CALL_FORWARD_URL:$CALL_FORWARD_URL"
-   sed -i "s|%CALL_FORWARD_URL%|$CALL_FORWARD_URL|g" /etc/asterisk/extensions_custom.conf
-else
-    echo "警告: CALL_FORWARD_URL 环境变量未设置，使用默认配置"
-fi
 
 if [ -n "$PHONE_ID" ]; then
    echo "配置 PHONE_ID:$PHONE_ID"
-   sed -i "s|%PHONE_ID%|$PHONE_ID|g" /etc/asterisk/extensions_custom.conf
+   sed -i "/^PHONE_ID=/c\PHONE_ID=${PHONE_ID}" /etc/asterisk/extensions_custom.conf
 else
     echo "警告: PHONE_ID 环境变量未设置，使用默认配置"
 fi

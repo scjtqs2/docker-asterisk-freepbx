@@ -14,29 +14,29 @@ services:
     environment:
       - TZ=Asia/Shanghai
       - DBENGINE=mysql
-      - DBNAME=asterisk
-      - DBHOST=192.168.123.123  # mysql的部署就不多描述了
+      - DBNAME=asterisk                # 预先创建的asterisk数据库
+      - DBHOST=192.168.123.123         # 外部的mysql的部署就不多描述了
       - DBPORT=3306
-      - CDRDBNAME=asteriskcdrdb
-      - DBUSER=asterisk
-      - DBPASS=asteriskPass123
-      - USER=asterisk
-      - GROUP=asterisk
-      - WEBROOT=/var/www/html
-      - ASTETCDIR=/etc/asterisk
-      - ASTMODDIR=/usr/lib64/asterisk/modules
-      - ASTVARLIBDIR=/var/lib/asterisk
-      - ASTAGIDIR=/var/lib/asterisk/agi-bin
-      - ASTSPOOLDIR=/var/spool/asterisk
-      - ASTRUNDIR=/var/run/asterisk
-      - AMPBIN=/var/lib/asterisk/bin
-      - AMPSBIN=/usr/sbin
-      - AMPCGIBIN=/var/www/cgi-bin
-      - AMPPLAYBACK=/var/lib/asterisk/playback
-      - FORWARD_URL=http://forwardsms:8080/api/v1/sms/receive #对应下面的转发服务
+      - CDRDBNAME=asteriskcdrdb        # 预先创建的cdr数据库
+      - DBUSER=asterisk                # mysql 用户名
+      - DBPASS=asteriskPass123         # mysql密码
+      - USER=asterisk                  # 内部执行用户,不要修改
+      - GROUP=asterisk                 # 内部执行用户组，不要修改
+      - WEBROOT=/var/www/html          # 不做修改
+      - ASTETCDIR=/etc/asterisk        # 不做修改
+      - ASTMODDIR=/usr/lib64/asterisk/modules # 不做修改
+      - ASTVARLIBDIR=/var/lib/asterisk        # 不做修改
+      - ASTAGIDIR=/var/lib/asterisk/agi-bin   # 不做修改
+      - ASTSPOOLDIR=/var/spool/asterisk       # 不做修改
+      - ASTRUNDIR=/var/run/asterisk           # 不做修改
+      - AMPBIN=/var/lib/asterisk/bin          # 不做修改
+      - AMPSBIN=/usr/sbin                     # 不做修改
+      - AMPCGIBIN=/var/www/cgi-bin            # 不做修改
+      - AMPPLAYBACK=/var/lib/asterisk/playback # 不做修改
       - AT_PORT=/dev/ttyUSB2        # 第一次运行生成配置时有效。后面需要自行去./asterisk/etcasterisk/quectel.conf 下去手动修改
       - AUDIO_PORT=/dev/ttyUSB1     # 第一次运行生成配置时有效。后面需要自行去./asterisk/etcasterisk/quectel.conf 下去手动修改
-      - FORWARD_SECRET=YourFowdaardSecret   # 短信推送通信秘钥，和下面服务的填一样。
+      - FORWARD_SECRET=YourFowdaardSecret   # 短信推送通信秘钥
+      - SMS_SEND_PORT=1285                  # sms_send的go程序的http端口，提供接受asterisk短信(转发出去)和发送短信的api。
       - PHONE_ID=SIM1_1861xxxxxxxxxx # 短信推送的时候标识字段。
       - SMTP_SERVER=smtp.mycompany.com:587 # 您的SMTP服务器地址和端口
       - SMTP_USERNAME=freepbx@mycompany.com # 您的邮箱账号
@@ -58,17 +58,6 @@ services:
       - ./asterisk/logs:/var/log/asterisk         # asterisk的日志
       - ./asterisk/wwwdata:/var/www/html          # freepbx的内容
       - ./asterisk/records:/var/spool/asterisk/monitor
+      - ./forward.yaml:/data/config/forward.yaml # 转发配置文件   # 转发短信到其他平台 配置文件参考 https://github.com/scjtqs2/ForwardSMS/blob/master/data/config/forward.yaml
     restart: always
     privileged: true                              # 开了它，融器才具备root权限，能读取到/dev/ttyUSBx的数据
-  # 转发短信到其他平台 配置文件参考 https://github.com/scjtqs2/ForwardSMS/blob/master/data/config/forward.yaml
-  forwardsms:
-    image: ghcr.io/scjtqs2/forwardsms/forwardsms:latest
-    container_name: forwardsms  # 命名方便freepbx调用
-    environment:
-      - DEBUG=0
-      - FORWARD_SECRET=YourFowdaardSecret
-      - HTTP_PORT=8080
-      - TZ=Asia/Shanghai
-    volumes:
-      - ./forward.yaml:/data/config/forward.yaml
-    restart: always

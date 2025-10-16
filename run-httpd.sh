@@ -150,6 +150,7 @@ if [ -n "$FQDN" ] && [ "$ACME_ENABLE" == "true" ]; then
 
      # 首次颁发/续订证书 (为了容器启动后证书立即可用)
     echo "正在执行证书颁发/续订..."
+    echo "记得去webui上面去点击 Delete Self-Signed CA 和 import Locally"
     "$ACME_SH" --issue -d "$FQDN" --dns "$ACME_DNS_TYPE" --keylength ec-256 \
         -m "$ACME_EMAIL" --home "$ACME_HOME" || true
     ACME_EXIT_CODE=$?
@@ -174,51 +175,55 @@ if [ -n "$FQDN" ] && [ "$ACME_ENABLE" == "true" ]; then
         echo "acme.sh 证书操作成功 (已颁发/续订)。正在准备导入 FreePBX..."
 
         # 证书文件路径 (在 /data/acme 下)
-        FULL_CHAIN_FILE="$ACME_HOME/$FQDN"_ecc/fullchain.cer
-        KEY_FILE="$ACME_HOME/$FQDN"_ecc/$FQDN.key
+        CERT_DIR="$ACME_HOME/${FQDN}_ecc"
+        SERVER_CERT_FILE="$CERT_DIR/$FQDN.cer"
+        KEY_FILE="$CERT_DIR/$FQDN.key"
+        CA_CHAIN_FILE="$CERT_DIR/ca.cer"
+        FULL_CHAIN_FILE="$CERT_DIR/fullchain.cer"
 
         # 【新增】: FreePBX 期望的文件名和目录
         ASTERISK_KEYS_DIR="/etc/asterisk/keys"
         IMPORT_CERT_NAME="acme_auto_import"
 
-        # 确保 keys 目录存在
-        mkdir -p "$ASTERISK_KEYS_DIR"
-
-        # 【关键步骤】：将证书文件复制到 FreePBX 期望的导入目录，并重命名
-        echo "正在复制证书文件到 $ASTERISK_KEYS_DIR..."
-        cp "$FULL_CHAIN_FILE" "$ASTERISK_KEYS_DIR/$IMPORT_CERT_NAME.crt"
-        cp "$KEY_FILE" "$ASTERISK_KEYS_DIR/$IMPORT_CERT_NAME.key"
-
-        # 确保文件权限正确 (asterisk 用户需要访问)
-        chown asterisk:asterisk "$ASTERISK_KEYS_DIR/$IMPORT_CERT_NAME.crt" "$ASTERISK_KEYS_DIR/$IMPORT_CERT_NAME.key"
-
-        # 4. 导入和设置证书到 FreePBX (fwconsole)
-        echo "正在导入证书到 FreePBX Certificate Management..."
-        # 【修正】: 直接执行 --import，让 FreePBX 扫描目录
-        fwconsole certificate --import --force
-
-        # ... (后续的查找 CERT_ID 逻辑不变) ...
-        # FreePBX 导入成功后，分配的证书名称通常是复制的文件名 'acme_auto_import'
-        # 查找证书 ID 并设置为默认
-        CERT_ID=$(fwconsole certificate --list | \
-            grep -vE '^\+|\ ID\ |^\s*$' | \
-            grep "$IMPORT_CERT_NAME" | \
-            awk -F'|' '{print $2}' | \
-            tr -d '[:space:]' | \
-            sed 's/^0*//'  # <-- 【关键修正】: 移除前导零
-        )
-
-        # 确保提取的 ID 是有效的数字
-        if [[ "$CERT_ID" =~ ^[0-9]+$ ]]; then
-            echo "找到证书 ID: $CERT_ID。设置为默认证书并重载 FreePBX 配置..."
-
-            # 证书 ID 已经确认是可靠的数字，执行设置默认证书
-            fwconsole certificate --default="$CERT_ID"
-            fwconsole reload
+        # 检查所有必需文件是否存在
+        if [ ! -f "$SERVER_CERT_FILE" ] || [ ! -f "$KEY_FILE" ] || [ ! -f "$CA_CHAIN_FILE" ]; then
+            echo "【严重错误】: acme.sh 成功执行，但必需的证书文件 ($SERVER_CERT_FILE, $KEY_FILE, $CA_CHAIN_FILE) 未找到！"
         else
-            # 打印提取失败原因，并提供手动指导
-            echo "【严重警告】: 证书导入成功，但无法自动获取证书 ID。提取结果: $CERT_ID。"
-            echo "请手动在 Web 界面中将证书（名称: $IMPORT_CERT_NAME）设置为默认。"
+            ASTERISK_KEYS_DIR="/etc/asterisk/keys"
+            IMPORT_CERT_NAME="acme_auto_import"
+            mkdir -p "$ASTERISK_KEYS_DIR"
+
+            # 分别复制服务器证书、私钥和 CA 链文件
+            echo "正在复制证书文件到 $ASTERISK_KEYS_DIR 以匹配 FreePBX 结构..."
+#            cp "$SERVER_CERT_FILE" "$ASTERISK_KEYS_DIR/$IMPORT_CERT_NAME.crt"               # <-- 服务器证书
+            cp "$FULL_CHAIN_FILE" "$ASTERISK_KEYS_DIR/$IMPORT_CERT_NAME.crt"               # <-- 服务器证书
+            cp "$KEY_FILE" "$ASTERISK_KEYS_DIR/$IMPORT_CERT_NAME.key"                  # <-- 私钥
+            cp "$CA_CHAIN_FILE" "$ASTERISK_KEYS_DIR/$IMPORT_CERT_NAME-ca-bundle.crt" # <-- CA 证书链 ()
+#            cp "$FULL_CHAIN_FILE" "$ASTERISK_KEYS_DIR/$IMPORT_CERT_NAME-fullchain.crt"   # <-- 完整的证书链
+
+            # 【关键修正】: 确保所有文件的权限正确
+            chown asterisk:asterisk "$ASTERISK_KEYS_DIR/$IMPORT_CERT_NAME."*
+
+            # 4. 导入和设置证书到 FreePBX (fwconsole)
+            echo "正在导入证书到 FreePBX Certificate Management..."
+            fwconsole certificate --import --force
+
+            CERT_ID=$(fwconsole certificate --list | \
+                grep -vE '^\+|\ ID\ |^\s*$' | \
+                grep "$IMPORT_CERT_NAME" | \
+                awk -F'|' '{print $2}' | \
+                tr -d '[:space:]' | \
+                sed 's/^0*//'
+            )
+
+            if [[ "$CERT_ID" =~ ^[0-9]+$ ]]; then
+                echo "找到证书 ID: $CERT_ID。设置为默认证书并重载 FreePBX 配置..."
+                fwconsole certificate --default="$CERT_ID"
+                fwconsole reload
+            else
+                echo "【严重警告】: 证书导入成功，但无法自动获取证书 ID。提取结果: $CERT_ID。"
+                echo "请手动在 Web 界面中将证书（名称: $IMPORT_CERT_NAME）设置为默认。"
+            fi
         fi
     fi
     CRON_JOB="0 2 * * * . ${ENV_FILE}; /usr/local/bin/acme_renew_and_import.sh" # 每天凌晨2点执行
@@ -239,20 +244,18 @@ else
     echo "跳过 SSL 证书配置和 Cron 设置。"
 fi
 
-## 动态IP定时更新到数据库。 不需要了，freepbx的`External Address`支持填域名。会自动解析动态公网ip。
-#if [ "$DYNAMIC_IP_ENABLE" == "true" ]; then
-#  echo "--- Setting up dynamic IP update cron job ---"
-#  # 每 5 分钟执行一次 IP 检查脚本，并将日志输出到指定文件
-#  IP_CRON_JOB="*/5 * * * * . ${ENV_FILE}; /usr/local/bin/update-ip.sh >> /var/log/asterisk/cron-ip-update.log 2>&1"
-#
-#  # 安全地将任务添加到 crontab，避免覆盖现有任务
-#  (crontab -l 2>/dev/null; echo "$IP_CRON_JOB") | crontab -
-#
-#  # 确保 cron 服务正在运行
-#  if ! pgrep -x "cron" > /dev/null; then
-#      cron
-#  fi
-#  echo "Dynamic IP update cron job has been set to run every 5 minutes."
-#fi
+# ============================================================
+# 【新增】: 在后台启动 Go 短信网关服务
+# ============================================================
+echo ">>> [Daemon] Starting SMS Gateway service in the background..."
+# 检查二进制文件是否存在
+if [ -f "/usr/local/bin/sms-gateway" ]; then
+    # 使用 & 将进程放到后台运行
+    # 将日志输出到 stdout/stderr，以便 docker logs 可以捕获
+    /usr/local/bin/sms-gateway > /proc/1/fd/1 2>/proc/1/fd/2 &
+    echo "SMS Gateway service started."
+else
+    echo "Warning: /usr/local/bin/sms-gateway not found, skipping startup."
+fi
 
 exec /usr/sbin/apachectl -DFOREGROUND
