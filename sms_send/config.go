@@ -21,7 +21,7 @@ func GetAMIConfigFromDB(db *sql.DB) (*AMIConfig, error) {
 
 	// The AMI host is the FreePBX container itself.
 	// The default AMI port is 5038.
-	config := &AMIConfig{
+	amiConfig := &AMIConfig{
 		Host: "127.0.0.1", // Docker service name for the FreePBX container
 		Port: "5038",
 	}
@@ -41,10 +41,10 @@ func GetAMIConfigFromDB(db *sql.DB) (*AMIConfig, error) {
 			return nil, fmt.Errorf("failed to scan row: %w", err)
 		}
 		if keyword == "AMPMGRUSER" {
-			config.Username = value
+			amiConfig.Username = value
 			foundUser = true
 		} else if keyword == "AMPMGRPASS" {
-			config.Secret = value
+			amiConfig.Secret = value
 			foundPass = true
 		}
 	}
@@ -53,8 +53,8 @@ func GetAMIConfigFromDB(db *sql.DB) (*AMIConfig, error) {
 		return nil, fmt.Errorf("could not find AMPMGRUSER or AMPMGRPASS in the freepbx_settings table")
 	}
 
-	log.Printf("Successfully fetched AMI credentials for user: %s", config.Username)
-	return config, nil
+	log.Printf("Successfully fetched AMI credentials for user: %s", amiConfig.Username)
+	return amiConfig, nil
 }
 
 func initConfig() error {

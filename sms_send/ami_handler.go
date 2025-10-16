@@ -12,10 +12,10 @@ import (
 )
 
 // SendSMSDirect connects to AMI and executes the 'quectel sms' command.
-func SendSMSDirect(config *AMIConfig, device, recipient, message string) (string, error) {
+func SendSMSDirect(amiConfig *AMIConfig, device, recipient, message string) (string, error) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	amiHost := fmt.Sprintf("%s:%s", config.Host, config.Port)
+	amiHost := fmt.Sprintf("%s:%s", amiConfig.Host, amiConfig.Port)
 
 	log.Printf("Connecting to AMI at %s", amiHost)
 	socket, err := ami.NewSocket(ctx, amiHost)
@@ -27,7 +27,7 @@ func SendSMSDirect(config *AMIConfig, device, recipient, message string) (string
 	if err != nil {
 		return "", fmt.Errorf("failed to generate UUID for AMI action: %w", err)
 	}
-	err = ami.Login(ctx, socket, config.Username, config.Secret, "Off", uuid)
+	err = ami.Login(ctx, socket, amiConfig.Username, amiConfig.Secret, "Off", uuid)
 	if err != nil {
 		return "", fmt.Errorf("AMI login failed: %w", err)
 	}
@@ -51,10 +51,10 @@ func SendSMSDirect(config *AMIConfig, device, recipient, message string) (string
 }
 
 // SendSMSOriginate connects to AMI and executes a dialplan to send SMS with special characters.
-func SendSMSOriginate(config *AMIConfig, device, recipient, message string) (string, error) {
+func SendSMSOriginate(amiConfig *AMIConfig, device, recipient, message string) (string, error) {
 	ctx, cancel := context.WithCancel(context.Background())
 	defer cancel()
-	amiHost := fmt.Sprintf("%s:%s", config.Host, config.Port)
+	amiHost := fmt.Sprintf("%s:%s", amiConfig.Host, amiConfig.Port)
 
 	log.Printf("Connecting to AMI at %s", amiHost)
 	socket, err := ami.NewSocket(ctx, amiHost)
@@ -69,7 +69,7 @@ func SendSMSOriginate(config *AMIConfig, device, recipient, message string) (str
 	}
 
 	// 登录 AMI
-	err = ami.Login(ctx, socket, config.Username, config.Secret, "Off", uuid)
+	err = ami.Login(ctx, socket, amiConfig.Username, amiConfig.Secret, "Off", uuid)
 	if err != nil {
 		return "", fmt.Errorf("AMI login failed: %w", err)
 	}
@@ -120,7 +120,7 @@ func SendSMSOriginate(config *AMIConfig, device, recipient, message string) (str
 
 // SendSMSShell directly executes the wrapper shell script inside the container.
 // This is a much more direct and simpler approach than using AMI Originate.
-func SendSMSShell(config *AMIConfig, device, recipient, message string) (string, error) {
+func SendSMSShell(amiConfig *AMIConfig, device, recipient, message string) (string, error) {
 	log.Println("Attempting to send SMS by directly executing shell script...")
 	// 创建一个带超时的上下文，防止命令无限期挂起
 	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
