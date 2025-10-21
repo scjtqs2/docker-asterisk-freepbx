@@ -11,6 +11,7 @@ services:
       - "5060:5060/tcp"
       - "5060:5060/udp"
       - "10000-10100:10000-10100/udp" #通话媒体端口，需要自行在freepbx后台设置范围。太多了docker映射不过来，劲量小吧。
+      - "1285:1285"  # sms_send服务端口。SMS_SEND_PORT
     environment:
       - TZ=Asia/Shanghai
       - DBENGINE=mysql
