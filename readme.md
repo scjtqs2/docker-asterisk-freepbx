@@ -24,8 +24,8 @@
 ```shell
 curl --location --request POST 'http://<your_server_ip>:1285/api/v1/sms/send' \
 --header 'Content-Type: application/json' \
+--header 'X-Auth-Secret: YOUR_FORWARD_SECRET' \
 --data '{
-    "secret": "YOUR_FORWARD_SECRET",
     "recipient": "目标手机号码",
     "message": "这是您的短信内容。\n可以包含换行符。",
     "device": "quectel0"
