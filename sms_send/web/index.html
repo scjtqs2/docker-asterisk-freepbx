@@ -1,0 +1,34 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SMS Conversations</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>SMS Conversations <button id="logout-btn" class="logout-button">Logout</button></h1>
+        <button id="new-sms-btn">New SMS</button>
+        <div id="conversations-list"></div>
+        <div class="pagination">
+            <button id="prev-page">Previous</button>
+            <span id="page-info">Page 1</span>
+            <button id="next-page">Next</button>
+        </div>
+    </div>
+
+    <!-- Modal for new SMS -->
+    <div id="new-sms-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-button">&times;</span>
+            <h2>Send New SMS</h2>
+            <input type="text" id="recipient-input" placeholder="Recipient Number">
+            <textarea id="message-input" placeholder="Your message here..."></textarea>
+            <button id="send-new-sms-btn">Send</button>
+        </div>
+    </div>
+
+    <script src="/static/script.js"></script>
+</body>
+</html>

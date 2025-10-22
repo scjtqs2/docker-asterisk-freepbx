@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Conversation with {{ .Number }}</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="container">
+        <a href="/" class="back-link">&larr; Back to Conversations</a>
+        <h1>Conversation with <span id="conversation-number">{{ .Number }}</span> <button id="logout-btn" class="logout-button">Logout</button></h1>
+        <div id="messages-container"></div>
+        <div class="reply-area">
+            <textarea id="reply-message-input" placeholder="Type your reply..."></textarea>
+            <button id="reply-btn">Send Reply</button>
+        </div>
+    </div>
+
+    <script src="/static/script.js"></script>
+</body>
+</html>

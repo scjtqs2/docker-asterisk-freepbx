@@ -20,6 +20,7 @@
 > 
 > 查看你配置的`FORWARD_SECRET`环境变量，这里就用`YOUR_FORWARD_SECRET`为例
 > 
+> 已添加了一个简单的前端页面。访问`http://<your_server_ip>:<SMS_SEND_PORT>/` 即可
 ```shell
 curl --location --request POST 'http://<your_server_ip>:1285/api/v1/sms/send' \
 --header 'Content-Type: application/json' \

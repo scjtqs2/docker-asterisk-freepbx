@@ -5,6 +5,7 @@ import (
 	"fmt"
 	log "github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
+	"os"
 )
 
 // AMIConfig holds the necessary credentials for connecting to Asterisk's AMI.
@@ -13,6 +14,15 @@ type AMIConfig struct {
 	Port     string
 	Username string
 	Secret   string
+}
+
+// DBConfig holds the database connection details.
+type DBConfig struct {
+	Host     string
+	Port     string
+	Username string
+	Password string
+	DBName   string
 }
 
 // GetAMIConfigFromDB queries the FreePBX database to get AMI manager credentials.
@@ -61,18 +71,28 @@ func GetAMIConfigFromDB(db *sql.DB) (*AMIConfig, error) {
 	return amiConfig, nil
 }
 
-func initConfig() error {
-	// 读取发送配置文件
+func initConfig() (*DBConfig, error) {
+	// Read forwarding configuration
 	viperconfig = viper.New()
 	viperconfig.SetConfigName("forward")
 	viperconfig.SetConfigType("yaml")
 	viperconfig.AddConfigPath("/data/config")
 	if err := viperconfig.ReadInConfig(); err != nil {
-		return fmt.Errorf("读取推送配置失败: %v", err)
+		return nil, fmt.Errorf("failed to read push configuration: %v", err)
 	}
 	if err := viperconfig.Unmarshal(&config); err != nil {
-		return fmt.Errorf("解析推送配置失败: %v", err)
+		return nil, fmt.Errorf("failed to parse push configuration: %v", err)
 	}
-	log.Info("读取推送配置完成")
-	return nil
+	log.Info("Push configuration loaded successfully")
+
+	// Read database configuration from environment variables
+	dbConfig := &DBConfig{
+		Host:     os.Getenv("DBHOST"),
+		Port:     os.Getenv("DBPORT"),
+		Username: os.Getenv("DBUSER"),
+		Password: os.Getenv("DBPASS"),
+		DBName:   os.Getenv("DBNAME"),
+	}
+
+	return dbConfig, nil
 }

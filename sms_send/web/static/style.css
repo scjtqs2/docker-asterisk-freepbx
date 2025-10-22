@@ -1,0 +1,192 @@
+body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    background-color: #f0f2f5;
+    color: #333;
+    margin: 0;
+    padding: 20px;
+}
+
+.container {
+    max-width: 800px;
+    margin: 0 auto;
+    background-color: #fff;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+h1 {
+    font-size: 24px;
+    color: #1c1e21;
+    border-bottom: 1px solid #ddd;
+    padding-bottom: 10px;
+    margin-top: 0;
+}
+
+/* Conversation List */
+#conversations-list .conversation {
+    padding: 15px;
+    border-bottom: 1px solid #eee;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+#conversations-list .conversation:hover {
+    background-color: #f7f7f7;
+}
+
+#conversations-list .conversation h3 {
+    margin: 0 0 5px 0;
+    font-size: 18px;
+}
+
+#conversations-list .conversation p {
+    margin: 0;
+    color: #666;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+#conversations-list .conversation .time {
+    font-size: 12px;
+    color: #999;
+    float: right;
+}
+
+/* Pagination */
+.pagination {
+    text-align: center;
+    margin-top: 20px;
+}
+
+.pagination button {
+    padding: 8px 16px;
+    margin: 0 5px;
+    border: 1px solid #ccc;
+    background-color: #f8f8f8;
+    cursor: pointer;
+}
+
+.pagination button:disabled {
+    cursor: not-allowed;
+    opacity: 0.5;
+}
+
+/* Modal */
+.modal {
+    display: none; 
+    position: fixed; 
+    z-index: 1; 
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    overflow: auto; 
+    background-color: rgba(0,0,0,0.4);
+}
+
+.modal-content {
+    background-color: #fefefe;
+    margin: 15% auto; 
+    padding: 20px;
+    border: 1px solid #888;
+    width: 80%;
+    max-width: 500px;
+    border-radius: 8px;
+}
+
+.close-button {
+    color: #aaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+#recipient-input, #message-input, #reply-message-input {
+    width: 100%;
+    padding: 10px;
+    margin-bottom: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    box-sizing: border-box; /* Important */
+}
+
+#message-input, #reply-message-input {
+    height: 120px;
+    resize: vertical;
+}
+
+/* Conversation Detail */
+.back-link {
+    display: inline-block;
+    margin-bottom: 20px;
+    color: #007bff;
+    text-decoration: none;
+}
+
+#messages-container {
+    max-height: 60vh;
+    overflow-y: auto;
+    padding: 10px;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    margin-bottom: 20px;
+}
+
+.message {
+    padding: 10px 15px;
+    border-radius: 18px;
+    margin-bottom: 10px;
+    max-width: 70%;
+    line-height: 1.4;
+}
+
+.message.incoming {
+    background-color: #e4e6eb;
+    color: #050505;
+    align-self: flex-start;
+    margin-right: auto;
+}
+
+.message.outgoing {
+    background-color: #0084ff;
+    color: white;
+    align-self: flex-end;
+    margin-left: auto;
+}
+
+.message .timestamp {
+    font-size: 11px;
+    color: #666;
+    margin-top: 5px;
+    display: block;
+}
+
+.message.outgoing .timestamp {
+    color: #f0f0f0;
+}
+
+.reply-area {
+    display: flex;
+}
+
+#reply-message-input {
+    flex-grow: 1;
+    margin-right: 10px;
+}
+
+button {
+    padding: 10px 20px;
+    border: none;
+    background-color: #007bff;
+    color: white;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 16px;
+}
+
+button:hover {
+    background-color: #0056b3;
+}
