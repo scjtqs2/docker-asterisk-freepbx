@@ -1,6 +1,6 @@
 # 编译golang
 FROM golang:1.25-bookworm AS gobuild
-ENV GOPROXY='https://goproxy.cn,direct'
+#ENV GOPROXY='https://goproxy.cn,direct'
 
 WORKDIR /app
 # 复制 Go 源代码
@@ -20,9 +20,9 @@ ENV FREEPBX_VERSION=17
 
 
 # 使用 sed 替换源地址，同时支持 x86 和 arm64 架构
-RUN sed -i 's#http://ports.ubuntu.com#http://mirrors.aliyun.com#g' /etc/apt/sources.list.d/ubuntu.sources && \
-    sed -i 's#http://archive.ubuntu.com#http://mirrors.aliyun.com#g' /etc/apt/sources.list.d/ubuntu.sources && \
-    sed -i 's#http://security.ubuntu.com#http://mirrors.aliyun.com#g' /etc/apt/sources.list.d/ubuntu.sources
+#RUN sed -i 's#http://ports.ubuntu.com#http://mirrors.aliyun.com#g' /etc/apt/sources.list.d/ubuntu.sources && \
+#    sed -i 's#http://archive.ubuntu.com#http://mirrors.aliyun.com#g' /etc/apt/sources.list.d/ubuntu.sources && \
+#    sed -i 's#http://security.ubuntu.com#http://mirrors.aliyun.com#g' /etc/apt/sources.list.d/ubuntu.sources
 
 # 添加php8.2的支持。
 RUN apt update && \
