@@ -6,9 +6,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if (path.endsWith('/login') || path.endsWith('/login.html')) {
         initLoginPage();
     } else {
-        // For all other pages, authentication is required.
-        // `checkAuthAndInit` will handle redirection if not authenticated,
-        // or initialize the page if authentication is successful.
         checkAuthAndInit();
     }
 });
@@ -17,10 +14,9 @@ async function checkAuthAndInit() {
     const secret = localStorage.getItem('secret');
     if (!secret) {
         window.location.href = '/login';
-        return; // Stop execution
+        return;
     }
 
-    // Validate the stored secret to ensure it's still valid on the server
     try {
         const response = await fetch(`${apiBaseUrl}/auth/validate`, {
             method: 'POST',
@@ -28,12 +24,10 @@ async function checkAuthAndInit() {
             body: JSON.stringify({ secret: secret })
         });
 
-        // The auth/validate endpoint itself is not protected by the middleware
         if (response.status === 401) throw new Error('Server validation failed');
-        
+
         const result = await response.json();
         if (result.success) {
-            // If secret is valid, initialize the page content based on the current path
             const path = window.location.pathname;
             if (path === '/' || path.endsWith('/index.html')) {
                 initConversationsPage();
@@ -54,7 +48,6 @@ function initLoginPage() {
     const loginBtn = document.getElementById('login-btn');
     const secretInput = document.getElementById('secret-input');
 
-    // If we are on the login page, any old secret is likely invalid.
     localStorage.removeItem('secret');
 
     loginBtn.addEventListener('click', async () => {
@@ -73,7 +66,7 @@ function initLoginPage() {
             const result = await response.json();
             if (result.success) {
                 localStorage.setItem('secret', secret);
-                window.location.href = '/'; // Redirect to home page
+                window.location.href = '/';
             } else {
                 alert('Invalid secret key.');
             }
@@ -115,9 +108,7 @@ const limit = 10;
 
 function initConversationsPage() {
     const conversationsList = document.getElementById('conversations-list');
-    const prevPageBtn = document.getElementById('prev-page');
-    const nextPageBtn = document.getElementById('next-page');
-    const pageInfo = document.getElementById('page-info');
+    const paginationContainer = document.getElementById('pagination-container');
     const newSmsBtn = document.getElementById('new-sms-btn');
     const modal = document.getElementById('new-sms-modal');
     const closeBtn = document.querySelector('.close-button');
@@ -127,6 +118,7 @@ function initConversationsPage() {
     if(logoutBtn) logoutBtn.addEventListener('click', logout);
 
     async function fetchConversations(page) {
+        currentPage = page;
         try {
             const response = await makeAuthenticatedRequest(`${apiBaseUrl}/sms/conversations?page=${page}&limit=${limit}`);
             const result = await response.json();
@@ -149,9 +141,7 @@ function initConversationsPage() {
                 conversationsList.innerHTML = '<p>No conversations found.</p>';
             }
 
-            pageInfo.textContent = `Page ${page}`;
-            prevPageBtn.disabled = page <= 1;
-            nextPageBtn.disabled = !result.data || result.data.length < limit;
+            renderPagination(result.total, page, limit);
         } catch (error) {
             if (error.message !== 'Authentication failed.' && error.message !== 'No secret found.') {
                  conversationsList.innerHTML = `<p>Error loading conversations: ${error.message}</p>`;
@@ -159,8 +149,50 @@ function initConversationsPage() {
         }
     }
 
-    prevPageBtn.addEventListener('click', () => { if (currentPage > 1) fetchConversations(--currentPage); });
-    nextPageBtn.addEventListener('click', () => fetchConversations(++currentPage));
+    function renderPagination(total, page, limit) {
+        const totalPages = Math.ceil(total / limit);
+        paginationContainer.innerHTML = '';
+
+        if (totalPages <= 1) return;
+
+        let paginationHtml = '';
+
+        // First and Previous buttons
+        paginationHtml += `<button data-page="1" ${page === 1 ? 'disabled' : ''}>First</button>`;
+        paginationHtml += `<button data-page="${page - 1}" ${page <= 1 ? 'disabled' : ''}>Previous</button>`;
+
+        // Page numbers
+        let startPage = Math.max(1, page - 2);
+        let endPage = Math.min(totalPages, page + 2);
+
+        if (startPage > 1) {
+            paginationHtml += `<span>...</span>`;
+        }
+
+        for (let i = startPage; i <= endPage; i++) {
+            paginationHtml += `<button data-page="${i}" class="${i === page ? 'active' : ''}">${i}</button>`;
+        }
+
+        if (endPage < totalPages) {
+            paginationHtml += `<span>...</span>`;
+        }
+
+        // Next and Last buttons
+        paginationHtml += `<button data-page="${page + 1}" ${page >= totalPages ? 'disabled' : ''}>Next</button>`;
+        paginationHtml += `<button data-page="${totalPages}" ${page === totalPages ? 'disabled' : ''}>Last</button>`;
+
+        paginationContainer.innerHTML = paginationHtml;
+    }
+
+    paginationContainer.addEventListener('click', (event) => {
+        if (event.target.tagName === 'BUTTON' && event.target.dataset.page) {
+            const page = parseInt(event.target.dataset.page, 10);
+            if (page !== currentPage) {
+                fetchConversations(page);
+            }
+        }
+    });
+
     newSmsBtn.addEventListener('click', () => modal.style.display = 'block');
     closeBtn.addEventListener('click', () => modal.style.display = 'none');
     window.addEventListener('click', (event) => { if (event.target == modal) modal.style.display = 'none'; });

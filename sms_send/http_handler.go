@@ -37,6 +37,7 @@ type APIResponse struct {
 	Success bool        `json:"success"`
 	Message string      `json:"message"`
 	Data    interface{} `json:"data,omitempty"`
+	Total   int         `json:"total,omitempty"`
 }
 
 type CallRequest struct {
@@ -135,6 +136,17 @@ func getConversationsHandler(c *gin.Context) {
 	limit, _ := strconv.Atoi(c.DefaultQuery("limit", "10"))
 	offset := (page - 1) * limit
 
+	// First, get the total number of conversations
+	var total int
+	totalQuery := `SELECT COUNT(*) FROM (SELECT DISTINCT IF(direction = 'incoming', from_number, to_number) as other_party FROM sms_log) AS T`
+	err := db.QueryRow(totalQuery).Scan(&total)
+	if err != nil {
+		log.Errorf("Error querying total conversations: %v", err)
+		c.JSON(http.StatusInternalServerError, APIResponse{Success: false, Message: "Failed to retrieve total conversations count"})
+		return
+	}
+
+	// Then, get the paginated list of conversations
 	query := `
         SELECT 
             other_party, 
@@ -171,7 +183,7 @@ func getConversationsHandler(c *gin.Context) {
 		conversations = append(conversations, conv)
 	}
 
-	c.JSON(http.StatusOK, APIResponse{Success: true, Data: conversations})
+	c.JSON(http.StatusOK, APIResponse{Success: true, Data: conversations, Total: total})
 }
 
 // getConversationDetailsHandler handles fetching all messages for a specific number.
