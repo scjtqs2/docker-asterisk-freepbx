@@ -229,10 +229,27 @@ function initConversationDetailPage() {
     const messagesContainer = document.getElementById('messages-container');
     const replyBtn = document.getElementById('reply-btn');
     const replyInput = document.getElementById('reply-message-input');
+    const newMessagesIndicator = document.getElementById('new-messages-indicator');
     const number = numberSpan.textContent;
     const logoutBtn = document.getElementById('logout-btn');
 
+    let isScrolledUp = false;
+    let messageCount = 0;
+
     if(logoutBtn) logoutBtn.addEventListener('click', logout);
+
+    messagesContainer.addEventListener('scroll', () => {
+        const atBottom = messagesContainer.scrollHeight - messagesContainer.scrollTop === messagesContainer.clientHeight;
+        isScrolledUp = !atBottom;
+        if (atBottom) {
+            newMessagesIndicator.style.display = 'none';
+        }
+    });
+
+    newMessagesIndicator.addEventListener('click', () => {
+        messagesContainer.scrollTop = messagesContainer.scrollHeight;
+        newMessagesIndicator.style.display = 'none';
+    });
 
     async function fetchMessages() {
         try {
@@ -240,15 +257,21 @@ function initConversationDetailPage() {
             const result = await response.json();
             if (!result.success) throw new Error(result.message);
 
-            messagesContainer.innerHTML = '';
-            if (result.data && result.data.length > 0) {
+            if (result.data && result.data.length > messageCount) {
+                messagesContainer.innerHTML = '';
                 result.data.forEach(msg => {
                     const div = document.createElement('div');
                     div.className = `message ${msg.direction}`;
                     div.innerHTML = `<p>${msg.body.replace(/\n/g, '<br>')}</p><span class="timestamp">${new Date(msg.created_at).toLocaleString()}</span>`;
                     messagesContainer.appendChild(div);
                 });
-                messagesContainer.scrollTop = messagesContainer.scrollHeight;
+
+                if (isScrolledUp) {
+                    newMessagesIndicator.style.display = 'block';
+                } else {
+                    messagesContainer.scrollTop = messagesContainer.scrollHeight;
+                }
+                messageCount = result.data.length;
             }
         } catch (error) {
             if (error.message !== 'Authentication failed.' && error.message !== 'No secret found.') {
