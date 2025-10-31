@@ -296,7 +296,7 @@ func smsHandler(c *gin.Context) {
 	}).Info("收到短信推送")
 
 	// 处理短信转发
-	if err := processSMS(smsReq.Number, smsReq.Time, smsReq.Text, smsReq); err != nil {
+	if err := processSMS(smsReq); err != nil {
 		log.Errorf("Failed to process SMS for forwarding: %v", err)
 	}
 
@@ -319,12 +319,23 @@ func validateSecret(secret string) error {
 	return nil
 }
 
-func processSMS(sender, time, text string, smsReq SMSReciveRequest) error {
+func processSMS(smsReq SMSReciveRequest) error {
 	log.WithFields(log.Fields{
-		"sender": sender,
-		"time":   time,
-		"text":   text,
+		"sender": smsReq.Number,
+		"time":   smsReq.Time,
+		"text":   smsReq.Text,
 	}).Info("开始处理短信")
+
+	// Parse the ISO 8601 time string from the request
+	parsedTime, err := time.Parse(time.RFC3339, smsReq.Time)
+	if err != nil {
+		log.Warnf("Could not parse time string '%s', using current time. Error: %v", smsReq.Time, err)
+		parsedTime = time.Now()
+	}
+
+	// Format the time for the notification message
+	loc, _ := time.LoadLocation("Asia/Shanghai")
+	formattedTime := parsedTime.In(loc).Format("2006-01-02 15:04:05")
 
 	// 遍历所有配置的转发规则
 	for name, cfg := range config {
@@ -347,9 +358,9 @@ func processSMS(sender, time, text string, smsReq SMSReciveRequest) error {
 		}
 
 		// 根据规则类型匹配
-		if shouldSendNotification(ruleType, rule, text) {
+		if shouldSendNotification(ruleType, rule, smsReq.Text) {
 			log.Infof("触发规则: %s, 类型: %s", name, ruleType)
-			sendNotification(c, sender, time, text, rule, smsReq)
+			sendNotification(c, smsReq.Number, formattedTime, smsReq.Text, rule, smsReq)
 		}
 	}
 
@@ -419,6 +430,17 @@ func processCALL(callReq CallRequest) error {
 		"type":     callReq.Type,
 		"duration": callReq.Duration,
 	}).Info("开始处理call")
+
+	// Parse the ISO 8601 time string from the request
+	parsedTime, err := time.Parse(time.RFC3339, callReq.Time)
+	if err != nil {
+		log.Warnf("Could not parse time string '%s', using current time. Error: %v", callReq.Time, err)
+		parsedTime = time.Now()
+	}
+
+	// Format the time for the notification message
+	loc, _ := time.LoadLocation("Asia/Shanghai")
+	callReq.Time = parsedTime.In(loc).Format("2006-01-02 15:04:05")
 
 	// 遍历所有配置的转发规则
 	for name, cfg := range config {
