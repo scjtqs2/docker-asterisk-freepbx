@@ -13,7 +13,7 @@ all:
   url: https://qyapi.weixin.qq.com/cgi-bin/webhook/send?key=xxxxxxx
 
 工单号:
-  rule: "\\d{8}"   # 匹配8位数字
+  rule: "\d{8}"   # 匹配8位数字
   type: regex
   notify: gotify
   url: https://gotify.example.com
@@ -31,6 +31,14 @@ gtify:
     rule: all
     url: "https://gotify.example.com"
     token: "your_app_token"
+
+ntfy:
+    notify: ntfy
+    type: all
+    rule: all
+    url: "https://ntfy.sh"
+    topic: "your_topic"
+    token: "your_ntfy_token" # 可选，私有化部署需要
 
 email:
     notify: email

@@ -59,6 +59,6 @@ services:
       - ./asterisk/logs:/var/log/asterisk         # asterisk的日志
       - ./asterisk/wwwdata:/var/www/html          # freepbx的内容
       - ./asterisk/records:/var/spool/asterisk/monitor
-      - ./forward.yaml:/data/config/forward.yaml # 转发配置文件   # 转发短信到其他平台 配置文件参考 https://github.com/scjtqs2/ForwardSMS/blob/master/data/config/forward.yaml
+      - ./forward.yaml:/data/config/forward.yaml # 转发配置文件   # 转发短信到其他平台 配置文件参考 https://github.com/scjtqs2/docker-asterisk-freepbx/blob/main/forward.yaml
     restart: always
     privileged: true                              # 开了它，融器才具备root权限，能读取到/dev/ttyUSBx的数据

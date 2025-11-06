@@ -51,6 +51,13 @@ func sendForward(config map[string]interface{}, title string, mobileTitle string
 		if ok1 && ok2 {
 			sendGotify(url, token, mobileTitle, messagePhone)
 		}
+	case "ntfy":
+		url, ok1 := config["url"].(string)
+		topic, ok2 := config["topic"].(string)
+		token, _ := config["token"].(string) // token is optional
+		if ok1 && ok2 {
+			sendNtfy(url, topic, token, mobileTitle, messagePhone)
+		}
 	case "email":
 		smtpHost, ok1 := config["smtp_host"].(string)
 		smtpPort, ok2 := config["smtp_port"].(string)
@@ -215,6 +222,33 @@ func sendGotify(url, token, title, message string) {
 	log.Info("Gotify通知发送成功")
 }
 
+func sendNtfy(ntfyURL, topic, token, title, message string) {
+	req, err := http.NewRequest("POST", ntfyURL+"/"+topic, strings.NewReader(message))
+	if err != nil {
+		log.Errorf("创建Ntfy请求失败: %v", err)
+		return
+	}
+	req.Header.Set("Title", title)
+	if token != "" {
+		req.Header.Set("Authorization", "Bearer "+token)
+	}
+
+	client := &http.Client{}
+	resp, err := client.Do(req)
+	if err != nil {
+		log.Errorf("发送Ntfy通知失败: %v", err)
+		return
+	}
+	defer resp.Body.Close()
+
+	if resp.StatusCode == http.StatusOK {
+		log.Info("Ntfy通知发送成功")
+	} else {
+		body, _ := io.ReadAll(resp.Body)
+		log.Errorf("Ntfy通知发送失败，状态码: %d, 响应: %s", resp.StatusCode, string(body))
+	}
+}
+
 func sendEmail(smtpHost, smtpPort, username, password, from, to, subject, body string) {
 	auth := smtp.PlainAuth("", username, password, smtpHost)
 	msg := []byte("To: " + to + "\r\n" +
@@ -313,7 +347,7 @@ func sendDingtalk(webhookURL, title, message string) {
 	req, err := http.NewRequest("POST", webhookURL, bytes.NewBuffer(payload))
 	if err != nil {
 		log.Errorf("创建钉钉请求失败: %v", err)
-		return
+return
 	}
 	req.Header.Set("Content-Type", "application/json")
 
