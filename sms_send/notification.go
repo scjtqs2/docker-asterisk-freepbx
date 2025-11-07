@@ -147,6 +147,7 @@ func sendBark(url, title, body string) {
 		Title:     title,
 		Body:      body,
 		IsArchive: 1,
+		Level:     "timeSensitive",
 	}
 
 	// 检测验证码模式 - 使用修复后的函数

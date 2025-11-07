@@ -25,7 +25,7 @@ bark:
     rule: all
     url: "https://api.day.app/xxxx"
 
-gtify:
+gotify:
     notify: gotify
     type: all
     rule: all
