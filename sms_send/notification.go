@@ -229,6 +229,7 @@ func sendNtfy(ntfyURL, topic, token, title, message string) {
 		return
 	}
 	req.Header.Set("Title", title)
+	req.Header.Set("Priority", "5")
 	if token != "" {
 		req.Header.Set("Authorization", "Bearer "+token)
 	}
