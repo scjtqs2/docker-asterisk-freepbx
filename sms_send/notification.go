@@ -230,7 +230,7 @@ func sendNtfy(ntfyURL, topic, token, title, message string) {
 		return
 	}
 	req.Header.Set("Title", title)
-	req.Header.Set("Priority", "5")
+	req.Header.Set("Priority", "4")
 	if token != "" {
 		req.Header.Set("Authorization", "Bearer "+token)
 	}
@@ -349,7 +349,7 @@ func sendDingtalk(webhookURL, title, message string) {
 	req, err := http.NewRequest("POST", webhookURL, bytes.NewBuffer(payload))
 	if err != nil {
 		log.Errorf("创建钉钉请求失败: %v", err)
-return
+		return
 	}
 	req.Header.Set("Content-Type", "application/json")
 
