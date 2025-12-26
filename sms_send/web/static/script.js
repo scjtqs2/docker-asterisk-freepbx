@@ -1,3 +1,17 @@
+function formatAsLocalDateTime(dateString) {
+    if (!dateString) {
+        return '';
+    }
+    const date = new Date(dateString);
+    const year = date.getFullYear();
+    const month = (date.getMonth() + 1).toString().padStart(2, '0');
+    const day = date.getDate().toString().padStart(2, '0');
+    const hours = date.getHours().toString().padStart(2, '0');
+    const minutes = date.getMinutes().toString().padStart(2, '0');
+    const seconds = date.getSeconds().toString().padStart(2, '0');
+    return `${year}-${month}-${day} ${hours}:${minutes}:${seconds}`;
+}
+
 const apiBaseUrl = '/api/v1';
 
 document.addEventListener('DOMContentLoaded', () => {
@@ -130,7 +144,7 @@ function initConversationsPage() {
                     const div = document.createElement('div');
                     div.className = 'conversation';
                     div.innerHTML = `
-                        <span class="time">${new Date(conv.last_message_at).toLocaleString()}</span>
+                        <span class="time">${formatAsLocalDateTime(conv.last_message_at)}</span>
                         <h3>${conv.other_party}</h3>
                         <p>${conv.last_message}</p>
                     `;
@@ -262,7 +276,7 @@ function initConversationDetailPage() {
                 result.data.forEach(msg => {
                     const div = document.createElement('div');
                     div.className = `message ${msg.direction}`;
-                    div.innerHTML = `<p>${msg.body.replace(/\n/g, '<br>')}</p><span class="timestamp">${new Date(msg.created_at).toLocaleString()}</span>`;
+                    div.innerHTML = `<p>${msg.body.replace(/\n/g, '<br>')}</p><span class="timestamp">${formatAsLocalDateTime(msg.created_at)}</span>`;
                     messagesContainer.appendChild(div);
                 });
 
