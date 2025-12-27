@@ -13,6 +13,23 @@ import (
 	"time"
 )
 
+var appLocation *time.Location
+
+func init() {
+	tz := os.Getenv("TZ")
+	if tz == "" {
+		tz = "Asia/Shanghai"
+		log.Info("TZ environment variable not set, using default: Asia/Shanghai")
+	}
+
+	var err error
+	appLocation, err = time.LoadLocation(tz)
+	if err != nil {
+		log.Fatalf("Failed to load timezone '%s'. Please ensure the TZ environment variable is set to a valid timezone and the container has timezone data. Error: %v", tz, err)
+	}
+	log.Infof("Application timezone set to: %s", tz)
+}
+
 // SMSReciveRequest 接收来自 asterisk 的请求结构
 type SMSReciveRequest struct {
 	Secret    string `json:"secret"`
@@ -54,22 +71,22 @@ type CallRequest struct {
 
 // Conversation represents a summary of an SMS conversation.
 type Conversation struct {
-	OtherParty    string    `json:"other_party"`
-	LastMessage   string    `json:"last_message"`
-	LastMessageAt time.Time `json:"last_message_at"`
-	TotalMessages int       `json:"total_messages"`
+	OtherParty    string `json:"other_party"`
+	LastMessage   string `json:"last_message"`
+	LastMessageAt string `json:"last_message_at"`
+	TotalMessages int    `json:"total_messages"`
 }
 
 // SMSMessage represents a single SMS message in a conversation.
 type SMSMessage struct {
-	ID         int       `json:"id"`
-	Direction  string    `json:"direction"`
-	FromNumber string    `json:"from_number"`
-	ToNumber   string    `json:"to_number"`
-	Body       string    `json:"body"`
-	Status     string    `json:"status"`
-	PhoneID    string    `json:"phone_id"`
-	CreatedAt  time.Time `json:"created_at"`
+	ID         int    `json:"id"`
+	Direction  string `json:"direction"`
+	FromNumber string `json:"from_number"`
+	ToNumber   string `json:"to_number"`
+	Body       string `json:"body"`
+	Status     string `json:"status"`
+	PhoneID    string `json:"phone_id"`
+	CreatedAt  string `json:"created_at"`
 }
 
 func setupRoutes() {
@@ -176,9 +193,15 @@ func getConversationsHandler(c *gin.Context) {
 	var conversations []Conversation
 	for rows.Next() {
 		var conv Conversation
-		if err := rows.Scan(&conv.OtherParty, &conv.LastMessage, &conv.LastMessageAt, &conv.TotalMessages); err != nil {
+		var lastMessageAt time.Time
+		if err := rows.Scan(&conv.OtherParty, &conv.LastMessage, &lastMessageAt, &conv.TotalMessages); err != nil {
 			log.Errorf("Error scanning conversation row: %v", err)
 			continue
+		}
+		if !lastMessageAt.IsZero() {
+			conv.LastMessageAt = lastMessageAt.In(appLocation).Format("2006-01-02 15:04:05")
+		} else {
+			conv.LastMessageAt = ""
 		}
 		conversations = append(conversations, conv)
 	}
@@ -209,11 +232,17 @@ func getConversationDetailsHandler(c *gin.Context) {
 	for rows.Next() {
 		var msg SMSMessage
 		var phoneID sql.NullString // Handle possible NULL phone_id
-		if err := rows.Scan(&msg.ID, &msg.Direction, &msg.FromNumber, &msg.ToNumber, &msg.Body, &msg.Status, &phoneID, &msg.CreatedAt); err != nil {
+		var createdAt time.Time
+		if err := rows.Scan(&msg.ID, &msg.Direction, &msg.FromNumber, &msg.ToNumber, &msg.Body, &msg.Status, &phoneID, &createdAt); err != nil {
 			log.Errorf("Error scanning message row: %v", err)
 			continue
 		}
 		msg.PhoneID = phoneID.String
+		if !createdAt.IsZero() {
+			msg.CreatedAt = createdAt.In(appLocation).Format("2006-01-02 15:04:05")
+		} else {
+			msg.CreatedAt = ""
+		}
 		messages = append(messages, msg)
 	}
 
@@ -346,8 +375,7 @@ func processSMS(smsReq SMSReciveRequest) error {
 	}
 
 	// Format the time for the notification message
-	loc, _ := time.LoadLocation("Asia/Shanghai")
-	formattedTime := parsedTime.In(loc).Format("2006-01-02 15:04:05")
+	formattedTime := parsedTime.In(appLocation).Format("2006-01-02 15:04:05")
 
 	// 遍历所有配置的转发规则
 	for name, cfg := range config {
@@ -451,8 +479,7 @@ func processCALL(callReq CallRequest) error {
 	}
 
 	// Format the time for the notification message
-	loc, _ := time.LoadLocation("Asia/Shanghai")
-	callReq.Time = parsedTime.In(loc).Format("2006-01-02 15:04:05")
+	callReq.Time = parsedTime.In(appLocation).Format("2006-01-02 15:04:05")
 
 	// 遍历所有配置的转发规则
 	for name, cfg := range config {

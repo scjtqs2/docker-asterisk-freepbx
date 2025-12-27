@@ -1,12 +1,5 @@
 function formatAsLocalDateTime(dateString) {
-    if (!dateString) {
-        return '';
-    }
-    const date = new Date(dateString);
-    const timeZone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-    // Use toLocaleString with a specific locale that gives a close format, and specify the timezone.
-    // 'sv-SE' (Swedish) is known for 'YYYY-MM-DD HH:mm:ss' like format.
-    return date.toLocaleString('sv-SE', { timeZone: timeZone });
+    return dateString || '';
 }
 
 const apiBaseUrl = '/api/v1';
