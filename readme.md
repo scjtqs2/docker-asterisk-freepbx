@@ -34,3 +34,5 @@ curl --location --request POST 'http://<your_server_ip>:1285/api/v1/sms/send' \
 
 对接demo可以参考 https://github.com/scjtqs2/bot_app_chat/blob/master/sms_asterisk.go
 
+部署可以参考 [博客说明](https://jose.scjtqs.com/linux_about/2025-11-20-2211/%e9%80%9a%e8%bf%87docker%e9%83%a8%e7%bd%b2-asterisk-freepbx-asterisk-chan-quectel-%e5%ae%9e%e7%8e%b0%e7%9f%ad%e4%bf%a1%e8%bd%ac%e5%8f%91%e8%af%ad%e9%9f%b3%e9%80%9a%e8%af%9d%e8%bd%ac%e5%8f%91.html)
+
